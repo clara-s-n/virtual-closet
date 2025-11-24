@@ -49,7 +49,8 @@ def try_on():
         # - Stable Diffusion with ControlNet
         # - Custom trained models
         
-        result_url = f"https://placeholder-try-on-result.com/{try_on_id}"
+        # Placeholder URL format - replace with actual MinIO URL in production
+        result_url = f"http://minio:9000/try-on-results/placeholder-{try_on_id}.jpg"
         
         return jsonify({
             'status': 'success',

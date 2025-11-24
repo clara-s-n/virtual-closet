@@ -30,16 +30,19 @@ export async function uploadFile(
   fileBuffer: Buffer,
   contentType: string
 ): Promise<string> {
+  const presignedUrlExpiry = parseInt(process.env.MINIO_PRESIGNED_URL_EXPIRY || '604800'); // Default: 7 days
+  
   await minioClient.putObject(bucket, fileName, fileBuffer, fileBuffer.length, {
     'Content-Type': contentType,
   });
 
-  const url = await minioClient.presignedGetObject(bucket, fileName, 7 * 24 * 60 * 60); // 7 days
+  const url = await minioClient.presignedGetObject(bucket, fileName, presignedUrlExpiry);
   return url;
 }
 
 export async function getFileUrl(bucket: string, fileName: string): Promise<string> {
-  return await minioClient.presignedGetObject(bucket, fileName, 7 * 24 * 60 * 60);
+  const presignedUrlExpiry = parseInt(process.env.MINIO_PRESIGNED_URL_EXPIRY || '604800'); // Default: 7 days
+  return await minioClient.presignedGetObject(bucket, fileName, presignedUrlExpiry);
 }
 
 export { minioClient, BUCKETS };

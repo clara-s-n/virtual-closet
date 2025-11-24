@@ -210,24 +210,38 @@ async function processTryOn(tryOnId: string) {
     // In a real implementation, this would call the AI service
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://ai-service:5000';
     
-    // Simulate AI processing
-    const response = await fetch(`${aiServiceUrl}/try-on`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tryOnId }),
-    });
-
-    if (response.ok) {
-      const result = await response.json();
-      await prisma.tryOn.update({
-        where: { id: tryOnId },
-        data: {
-          status: 'COMPLETED',
-          resultUrl: result.resultUrl,
-        },
+    // Simulate AI processing with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    
+    try {
+      const response = await fetch(`${aiServiceUrl}/try-on`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tryOnId }),
+        signal: controller.signal,
       });
-    } else {
-      throw new Error('AI service returned error');
+
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        const result = await response.json();
+        await prisma.tryOn.update({
+          where: { id: tryOnId },
+          data: {
+            status: 'COMPLETED',
+            resultUrl: result.resultUrl,
+          },
+        });
+      } else {
+        throw new Error(`AI service returned error: ${response.status}`);
+      }
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      if (fetchError instanceof Error && fetchError.name === 'AbortError') {
+        throw new Error('AI service timeout');
+      }
+      throw fetchError;
     }
   } catch (error) {
     console.error('Error processing try-on:', error);

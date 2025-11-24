@@ -56,18 +56,32 @@ git clone https://github.com/clara-s-n/virtual-closet.git
 cd virtual-closet
 ```
 
-2. Start all services with Docker Compose:
+2. (Optional but recommended) Configure environment variables:
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Generate a secure JWT secret
+openssl rand -base64 32
+
+# Edit .env and add your generated secret
+nano .env
+```
+
+3. Start all services with Docker Compose:
 ```bash
 docker-compose up -d
 ```
 
-3. Wait for all services to start (may take a few minutes on first run)
+4. Wait for all services to start (may take a few minutes on first run)
 
 4. Access the application:
    - **Frontend**: http://localhost:5173
    - **Backend API**: http://localhost:3000
    - **API Documentation**: http://localhost:3000/docs
    - **MinIO Console**: http://localhost:9001 (login: minioadmin/minioadmin)
+
+**Security Note**: The default JWT secret is insecure. For production use, always set a secure JWT_SECRET in your .env file.
 
 ### Initial Setup
 

@@ -52,7 +52,7 @@ services:
       NODE_ENV: development
       PORT: 3000
       DATABASE_URL: postgresql://virtualcloset:virtualcloset_password@postgres:5432/virtualcloset
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_SECRET: ${JWT_SECRET:-CHANGE-THIS-SECRET-IN-PRODUCTION-USE-ENV-FILE}
       MINIO_ENDPOINT: minio
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: minioadmin
