@@ -222,14 +222,38 @@ VITE_API_URL=http://localhost:3000
 
 ## AI Integration
 
-The AI service is currently a placeholder. To integrate a real virtual try-on AI model:
+The AI service integrates with **Hugging Face Spaces** for virtual try-on functionality. The current implementation uses the [Kwai-Kolors/Kolors-Virtual-Try-On](https://huggingface.co/spaces/Kwai-Kolors/Kolors-Virtual-Try-On) space by default.
 
-1. Choose an AI model (VITON, CP-VTON, Stable Diffusion + ControlNet, etc.)
-2. Update `ai-service/app.py` with the model implementation
-3. Add model dependencies to `ai-service/requirements.txt`
-4. Update the Docker image if GPU support is needed
+### How It Works
+
+1. User creates a try-on request via the frontend
+2. Backend stores the request in PostgreSQL with status `PROCESSING`
+3. Backend calls the AI service with body image and garment image MinIO keys
+4. AI service downloads images from MinIO, calls the Hugging Face Space, and uploads the result back to MinIO
+5. Backend updates the try-on record with status `COMPLETED` and the result image URL
+
+### Configuration
+
+Set these environment variables in your `.env` file:
+
+- `HF_SPACE_NAME`: Hugging Face Space to use (default: `Kwai-Kolors/Kolors-Virtual-Try-On`)
+- `HF_TOKEN`: Optional Hugging Face API token (required for private/duplicated spaces)
+
+### Using a Different Space
+
+To use a different virtual try-on model:
+
+1. Find a compatible Hugging Face Space
+2. Set `HF_SPACE_NAME` in your `.env` file
+3. Update the `client.predict()` parameters in `ai-service/app.py` to match the Space's API
 
 See `ai-service/README.md` for detailed integration instructions.
+
+### Performance Notes
+
+- Try-on processing can take 30-120 seconds depending on the Space's queue
+- The backend has a 3-minute timeout for try-on requests
+- For production, consider duplicating the Space to avoid queue times
 
 ## Contributing
 

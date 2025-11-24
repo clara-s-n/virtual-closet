@@ -207,18 +207,62 @@ async function processTryOn(tryOnId: string) {
       data: { status: 'PROCESSING' },
     });
 
-    // In a real implementation, this would call the AI service
+    // Fetch try-on with related data
+    const tryOn = await prisma.tryOn.findUnique({
+      where: { id: tryOnId },
+      include: {
+        bodyImage: true,
+        garments: {
+          include: {
+            garment: true,
+          },
+        },
+      },
+    });
+
+    if (!tryOn) {
+      throw new Error('Try-on not found');
+    }
+
+    // Extract MinIO keys from URLs
+    // URLs are in format: http://...?X-Amz-Algorithm=...&...
+    // The key is the part of the URL path after the bucket name
+    const extractKeyFromUrl = (url: string): string => {
+      try {
+        const urlObj = new URL(url);
+        // Remove leading slash and extract key
+        const pathParts = urlObj.pathname.split('/').filter(p => p);
+        // First part is bucket name, rest is the key
+        return pathParts.slice(1).join('/');
+      } catch (e) {
+        // If URL parsing fails, assume it's already a key
+        return url;
+      }
+    };
+
+    const bodyImageKey = extractKeyFromUrl(tryOn.bodyImage.imageUrl);
+    const garmentImageKeys = tryOn.garments.map(g => extractKeyFromUrl(g.garment.imageUrl));
+
+    if (garmentImageKeys.length === 0) {
+      throw new Error('No garments found for try-on');
+    }
+
+    // Call AI service
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://ai-service:5000';
     
-    // Simulate AI processing with timeout
+    // Increase timeout for AI processing (can take several minutes)
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minute timeout
     
     try {
       const response = await fetch(`${aiServiceUrl}/try-on`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tryOnId }),
+        body: JSON.stringify({
+          session_id: tryOnId,
+          body_image_key: bodyImageKey,
+          garment_image_keys: garmentImageKeys,
+        }),
         signal: controller.signal,
       });
 
@@ -226,15 +270,21 @@ async function processTryOn(tryOnId: string) {
 
       if (response.ok) {
         const result = await response.json();
+        
+        // Generate presigned URL for the result image
+        const { minioClient, BUCKETS, getFileUrl } = await import('../utils/minio.js');
+        const resultUrl = await getFileUrl(BUCKETS.TRY_ON_RESULTS, result.result_image_key);
+        
         await prisma.tryOn.update({
           where: { id: tryOnId },
           data: {
             status: 'COMPLETED',
-            resultUrl: result.resultUrl,
+            resultUrl: resultUrl,
           },
         });
       } else {
-        throw new Error(`AI service returned error: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`AI service returned error: ${response.status} - ${errorText}`);
       }
     } catch (fetchError) {
       clearTimeout(timeoutId);
@@ -245,9 +295,13 @@ async function processTryOn(tryOnId: string) {
     }
   } catch (error) {
     console.error('Error processing try-on:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     await prisma.tryOn.update({
       where: { id: tryOnId },
-      data: { status: 'FAILED' },
+      data: {
+        status: 'FAILED',
+        errorMessage: errorMessage,
+      },
     });
   }
 }
