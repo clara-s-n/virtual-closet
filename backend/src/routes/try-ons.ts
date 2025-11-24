@@ -225,14 +225,14 @@ async function processTryOn(tryOnId: string) {
     }
 
     // Extract MinIO keys from URLs
-    // URLs are in format: http://...?X-Amz-Algorithm=...&...
-    // The key is the part of the URL path after the bucket name
+    // MinIO presigned URLs are in format: http://host:port/bucket/key?X-Amz-Algorithm=...
+    // We need to extract just the key part (everything after the bucket name)
     const extractKeyFromUrl = (url: string): string => {
       try {
         const urlObj = new URL(url);
-        // Remove leading slash and extract key
+        // Remove leading slash and split path into parts
         const pathParts = urlObj.pathname.split('/').filter(p => p);
-        // First part is bucket name, rest is the key
+        // MinIO URL format: /bucket/key, so skip first part (bucket) and rejoin the rest
         return pathParts.slice(1).join('/');
       } catch (e) {
         // If URL parsing fails, assume it's already a key
@@ -250,9 +250,10 @@ async function processTryOn(tryOnId: string) {
     // Call AI service
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://ai-service:5000';
     
-    // Increase timeout for AI processing (can take several minutes)
+    // Configurable timeout for AI processing (default: 3 minutes)
+    const aiTimeout = parseInt(process.env.AI_SERVICE_TIMEOUT || '180000');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minute timeout
+    const timeoutId = setTimeout(() => controller.abort(), aiTimeout);
     
     try {
       const response = await fetch(`${aiServiceUrl}/try-on`, {

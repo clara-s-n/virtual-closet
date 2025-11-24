@@ -213,6 +213,7 @@ MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
 MINIO_USE_SSL=false
 AI_SERVICE_URL=http://ai-service:5000
+AI_SERVICE_TIMEOUT=180000  # Optional: AI service timeout in milliseconds (default: 3 minutes)
 ```
 
 ### Frontend (.env)

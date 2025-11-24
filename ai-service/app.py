@@ -87,9 +87,9 @@ def try_on():
                 'error': 'Missing required fields: session_id, body_image_key, garment_image_keys'
             }), 400
         
-        # Extract keys from URLs if they contain full URLs
-        body_key = body_image_key.split('/')[-1] if '/' in body_image_key else body_image_key
-        garment_key = garment_image_keys[0].split('/')[-1] if '/' in garment_image_keys[0] else garment_image_keys[0]
+        # Use the keys directly (backend already extracted them from URLs)
+        body_key = body_image_key
+        garment_key = garment_image_keys[0]
         
         print(f"Processing try-on for session {session_id}")
         print(f"Body image key: {body_key}")
