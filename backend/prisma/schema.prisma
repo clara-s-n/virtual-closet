@@ -1,0 +1,132 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bodyImages BodyImage[]
+  garments   Garment[]
+  outfits    Outfit[]
+  tryOns     TryOn[]
+}
+
+model BodyImage {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tryOns TryOn[]
+
+  @@index([userId])
+}
+
+model Garment {
+  id          String       @id @default(uuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  category    GarmentType
+  color       String?
+  brand       String?
+  imageUrl    String
+  description String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  outfitGarments OutfitGarment[]
+  tryOnGarments  TryOnGarment[]
+
+  @@index([userId])
+  @@index([category])
+}
+
+model Outfit {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  garments OutfitGarment[]
+  tryOns   TryOn[]
+
+  @@index([userId])
+}
+
+model OutfitGarment {
+  id        String  @id @default(uuid())
+  outfitId  String
+  outfit    Outfit  @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  garmentId String
+  garment   Garment @relation(fields: [garmentId], references: [id], onDelete: Cascade)
+
+  @@unique([outfitId, garmentId])
+  @@index([outfitId])
+  @@index([garmentId])
+}
+
+model TryOn {
+  id          String     @id @default(uuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bodyImageId String
+  bodyImage   BodyImage  @relation(fields: [bodyImageId], references: [id], onDelete: Cascade)
+  outfitId    String?
+  outfit      Outfit?    @relation(fields: [outfitId], references: [id], onDelete: SetNull)
+  status      TryOnStatus @default(PENDING)
+  resultUrl   String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  garments TryOnGarment[]
+
+  @@index([userId])
+  @@index([bodyImageId])
+  @@index([outfitId])
+}
+
+model TryOnGarment {
+  id        String  @id @default(uuid())
+  tryOnId   String
+  tryOn     TryOn   @relation(fields: [tryOnId], references: [id], onDelete: Cascade)
+  garmentId String
+  garment   Garment @relation(fields: [garmentId], references: [id], onDelete: Cascade)
+
+  @@unique([tryOnId, garmentId])
+  @@index([tryOnId])
+  @@index([garmentId])
+}
+
+enum GarmentType {
+  TOP
+  BOTTOM
+  DRESS
+  OUTERWEAR
+  SHOES
+  ACCESSORY
+}
+
+enum TryOnStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
