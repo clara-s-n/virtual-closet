@@ -272,7 +272,7 @@ async function processTryOn(tryOnId: string) {
         const result = await response.json();
         
         // Generate presigned URL for the result image
-        const { minioClient, BUCKETS, getFileUrl } = await import('../utils/minio.js');
+        const { BUCKETS, getFileUrl } = await import('../utils/minio.js');
         const resultUrl = await getFileUrl(BUCKETS.TRY_ON_RESULTS, result.result_image_key);
         
         await prisma.tryOn.update({
