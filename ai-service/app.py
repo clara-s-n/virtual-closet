@@ -96,13 +96,16 @@ def try_on():
         print(f"Garment image key: {garment_key}")
         
         # Download body image from MinIO
-        body_image_path = tempfile.mktemp(suffix='.jpg')
+        # Using mkstemp for secure temporary file creation
+        body_fd, body_image_path = tempfile.mkstemp(suffix='.jpg')
+        os.close(body_fd)  # Close the file descriptor
         temp_files.append(body_image_path)
         print(f"Downloading body image from bucket: {BUCKET_BODY_IMAGES}")
         s3_client.download_file(BUCKET_BODY_IMAGES, body_key, body_image_path)
         
         # Download garment image from MinIO
-        garment_image_path = tempfile.mktemp(suffix='.jpg')
+        garment_fd, garment_image_path = tempfile.mkstemp(suffix='.jpg')
+        os.close(garment_fd)  # Close the file descriptor
         temp_files.append(garment_image_path)
         print(f"Downloading garment image from bucket: {BUCKET_GARMENTS}")
         s3_client.download_file(BUCKET_GARMENTS, garment_key, garment_image_path)
@@ -136,7 +139,8 @@ def try_on():
         print(f"Result image path: {result_image_path}")
         
         # Download the result if it's a URL
-        final_result_path = tempfile.mktemp(suffix='.png')
+        final_fd, final_result_path = tempfile.mkstemp(suffix='.png')
+        os.close(final_fd)  # Close the file descriptor
         temp_files.append(final_result_path)
         
         if result_image_path.startswith('http://') or result_image_path.startswith('https://'):
