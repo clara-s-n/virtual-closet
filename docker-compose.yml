@@ -104,6 +104,12 @@ services:
       MINIO_PORT: 9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
+      MINIO_USE_SSL: false
+      MINIO_BUCKET_BODY_IMAGES: body-images
+      MINIO_BUCKET_GARMENTS: garments
+      MINIO_BUCKET_TRYON_RESULTS: try-on-results
+      HF_SPACE_NAME: ${HF_SPACE_NAME:-Kwai-Kolors/Kolors-Virtual-Try-On}
+      HF_TOKEN: ${HF_TOKEN:-}
     ports:
       - "5000:5000"
     depends_on:
