@@ -233,7 +233,14 @@ async function processTryOn(tryOnId: string) {
         // Remove leading slash and split path into parts
         const pathParts = urlObj.pathname.split('/').filter(p => p);
         // MinIO URL format: /bucket/key, so skip first part (bucket) and rejoin the rest
-        return pathParts.slice(1).join('/');
+        const key = pathParts.slice(1).join('/');
+        
+        // Validate that we extracted a non-empty key
+        if (!key) {
+          throw new Error('Failed to extract valid key from URL');
+        }
+        
+        return key;
       } catch (e) {
         // If URL parsing fails, assume it's already a key
         return url;
@@ -251,7 +258,12 @@ async function processTryOn(tryOnId: string) {
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://ai-service:5000';
     
     // Configurable timeout for AI processing (default: 3 minutes)
-    const aiTimeout = parseInt(process.env.AI_SERVICE_TIMEOUT || '180000');
+    // Validate timeout is within reasonable bounds (30 seconds to 10 minutes)
+    let aiTimeout = parseInt(process.env.AI_SERVICE_TIMEOUT || '180000');
+    if (isNaN(aiTimeout) || aiTimeout < 30000 || aiTimeout > 600000) {
+      console.warn(`Invalid AI_SERVICE_TIMEOUT value, using default: 180000ms`);
+      aiTimeout = 180000;
+    }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), aiTimeout);
     
